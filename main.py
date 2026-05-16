@@ -21,6 +21,7 @@ app.add_middleware(
     allow_origins=[
         "https://docuia-frontend-hdc8hzfqbqebc6cp.brazilsouth-01.azurewebsites.net",
         "http://localhost:5000",
+        "http://127.0.0.1:5000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
