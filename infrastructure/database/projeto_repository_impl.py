@@ -17,13 +17,13 @@ class ProjetoRepositoryImpl(IProjetoRepository):
         return Projeto(
             id=m.id, nome=m.nome, descricao=m.descricao, 
             empresa_id=m.empresa_id, status=m.status, 
-            categoria=m.categoria, link_repo=m.link_repo, criado_em=m.criado_em
+            categoria=m.categoria, link_repo=m.link_repo, criado_em=m.criado_em, cor=getattr(m, 'cor', 'teal')
         )
 
     def salvar(self, projeto: Projeto) -> Projeto:
         model = ProjetoModel(
             nome=projeto.nome, descricao=projeto.descricao, 
-            empresa_id=projeto.empresa_id, categoria=projeto.categoria, link_repo=projeto.link_repo
+            empresa_id=projeto.empresa_id, categoria=projeto.categoria, link_repo=projeto.link_repo, cor=projeto.cor
         )
         self.db.add(model)
         self.db.commit()

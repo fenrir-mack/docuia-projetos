@@ -1,3 +1,4 @@
+import random
 from typing import List
 from domain.entities.projeto import Projeto, MembroProjeto, SolicitacaoProjeto
 from domain.ports.projeto_repository import (
