@@ -69,7 +69,7 @@ def criar_projeto(dados: ProjetoInput, usuario_id: int = Depends(get_usuario_id)
     projeto = CriarProjetoUseCase(repo, membro_repo).executar(
         dados.nome, dados.descricao, dados.empresa_id, dados.categoria, dados.link_repo, usuario_id
     )
-    return {"id": projeto.id, "nome": projeto.nome}
+    return {"id": projeto.id, "nome": projeto.nome, "cor": getattr(projeto, "cor", "teal")}
 
 
 @router.get("/{projeto_id}")
@@ -81,7 +81,8 @@ def detalhe_projeto(projeto_id: int, usuario_id: int = Depends(get_usuario_id), 
     return {
         "id": projeto.id, "nome": projeto.nome, "descricao": projeto.descricao,
         "empresa_id": projeto.empresa_id, "status": projeto.status,
-        "categoria": projeto.categoria, "link_repo": projeto.link_repo
+        "categoria": projeto.categoria, "link_repo": projeto.link_repo,
+        "cor": getattr(projeto, "cor", "teal")
     }
 
 
@@ -93,7 +94,7 @@ def editar_projeto(projeto_id: int, dados: ProjetoEditInput, usuario_id: int = D
         projeto = EditarProjetoUseCase(repo, membro_repo).executar(
             projeto_id, dados.nome, dados.descricao, dados.categoria, dados.link_repo, usuario_id
         )
-        return {"id": projeto.id, "nome": projeto.nome}
+        return {"id": projeto.id, "nome": projeto.nome, "cor": getattr(projeto, "cor", "teal")}
     except (ValueError, PermissionError) as e:
         raise HTTPException(status_code=403, detail=str(e))
 
@@ -104,7 +105,7 @@ def arquivar_projeto(projeto_id: int, usuario_id: int = Depends(get_usuario_id),
     membro_repo = MembroProjetoRepositoryImpl(db)
     try:
         projeto = ArquivarProjetoUseCase(repo, membro_repo).executar(projeto_id, usuario_id)
-        return {"id": projeto.id, "status": projeto.status}
+        return {"id": projeto.id, "status": projeto.status, "cor": getattr(projeto, "cor", "teal")}
     except (ValueError, PermissionError) as e:
         raise HTTPException(status_code=403, detail=str(e))
 
