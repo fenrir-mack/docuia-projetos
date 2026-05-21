@@ -11,6 +11,7 @@ class ProjetoModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(255), nullable=False)
     descricao = Column(String(1000), default="")
+    cor = Column(String(50), default="teal")
     empresa_id = Column(Integer, nullable=False)
     status = Column(String(50), default="ativo")
     categoria = Column(String(255), default="")

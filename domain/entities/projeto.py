@@ -9,6 +9,7 @@ class Projeto:
     nome: str
     descricao: str
     empresa_id: int
+    cor: str = "teal"
     status: str = "ativo"        # "ativo", "arquivado"
     categoria: str = ""
     link_repo: str = ""

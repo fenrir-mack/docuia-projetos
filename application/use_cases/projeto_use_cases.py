@@ -1,3 +1,4 @@
+import random
 from typing import List
 from domain.entities.projeto import Projeto, MembroProjeto, SolicitacaoProjeto
 from domain.ports.projeto_repository import (
@@ -31,9 +32,10 @@ class CriarProjetoUseCase:
         self.membro_repo = membro_repo
 
     def executar(self, nome: str, descricao: str, empresa_id: int, categoria: str, link_repo: str, usuario_id: int) -> Projeto:
+        cor = random.choice(['teal', 'rose', 'amber', 'indigo', 'emerald', 'cyan'])
         projeto = Projeto(
             id=None, nome=nome, descricao=descricao, 
-            empresa_id=empresa_id, categoria=categoria, link_repo=link_repo
+            empresa_id=empresa_id, categoria=categoria, link_repo=link_repo, cor=cor
         )
         projeto = self.repo.salvar(projeto)
 
