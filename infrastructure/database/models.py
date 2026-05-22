@@ -37,3 +37,12 @@ class SolicitacaoProjetoModel(Base):
     usuario_id = Column(Integer, nullable=False)
     status = Column(String(50), default="pendente")
     criado_em = Column(DateTime, default=datetime.utcnow)
+
+
+class AcessoProjetoModel(Base):
+    __tablename__ = "acessos_projeto"
+
+    id = Column(Integer, primary_key=True, index=True)
+    projeto_id = Column(Integer, ForeignKey("projetos.id"), nullable=False, index=True)
+    usuario_id = Column(Integer, nullable=False, index=True)
+    ultimo_acesso_em = Column(DateTime, default=datetime.utcnow, nullable=False)
