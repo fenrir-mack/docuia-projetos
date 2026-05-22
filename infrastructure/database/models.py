@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
@@ -14,8 +14,6 @@ class ProjetoModel(Base):
     cor = Column(String(50), default="teal")
     empresa_id = Column(Integer, nullable=False)
     status = Column(String(50), default="ativo")
-    categoria = Column(String(255), default="")
-    link_repo = Column(String(500), default="")
     criado_em = Column(DateTime, default=datetime.utcnow)
 
 
@@ -35,6 +33,7 @@ class SolicitacaoProjetoModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     projeto_id = Column(Integer, ForeignKey("projetos.id"), nullable=False)
     usuario_id = Column(Integer, nullable=False)
+    mensagem = Column(Text, nullable=True)
     status = Column(String(50), default="pendente")
     criado_em = Column(DateTime, default=datetime.utcnow)
 

@@ -11,8 +11,6 @@ class Projeto:
     empresa_id: int
     cor: str = "teal"
     status: str = "ativo"        # "ativo", "arquivado"
-    categoria: str = ""
-    link_repo: str = ""
     criado_em: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -30,5 +28,6 @@ class SolicitacaoProjeto:
     id: Optional[int]
     projeto_id: int
     usuario_id: int
+    mensagem: Optional[str] = None
     status: str = "pendente"     # "pendente", "aprovada", "recusada"
     criado_em: datetime = field(default_factory=datetime.utcnow)

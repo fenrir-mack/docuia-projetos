@@ -33,6 +33,26 @@ from sqlalchemy import text
 app.include_router(projeto_router)
 
 
+def _ensure_schema():
+    # Migração leve (sem Alembic): garante coluna `mensagem` nas solicitações.
+    try:
+        with engine.connect() as connection:
+            has_col = connection.execute(
+                text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE table_name = 'solicitacoes_projeto' AND column_name = 'mensagem'"
+                )
+            ).first()
+            if not has_col:
+                connection.execute(text("ALTER TABLE solicitacoes_projeto ADD COLUMN mensagem TEXT"))
+                connection.commit()
+    except Exception:
+        pass
+
+
+_ensure_schema()
+
+
 @app.get("/")
 def health_check():
     return {"status": "ok", "servico": "ms3_projetos"}

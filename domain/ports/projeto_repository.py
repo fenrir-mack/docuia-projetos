@@ -22,6 +22,9 @@ class IProjetoRepository(ABC):
     @abstractmethod
     def deletar(self, id: int) -> None: pass
 
+    @abstractmethod
+    def ocultar_por_empresa(self, empresa_id: int) -> int: pass
+
 
 class IMembroProjetoRepository(ABC):
     @abstractmethod
@@ -43,6 +46,9 @@ class ISolicitacaoProjetoRepository(ABC):
 
     @abstractmethod
     def listar_por_projeto(self, projeto_id: int) -> List[SolicitacaoProjeto]: pass
+
+    @abstractmethod
+    def buscar_pendente(self, projeto_id: int, usuario_id: int) -> Optional[SolicitacaoProjeto]: pass
 
     @abstractmethod
     def buscar_por_id(self, id: int) -> Optional[SolicitacaoProjeto]: pass

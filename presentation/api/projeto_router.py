@@ -14,7 +14,8 @@ from infrastructure.database.projeto_repository_impl import (
 from application.use_cases.projeto_use_cases import (
     ListarProjetosUseCase, CriarProjetoUseCase, EditarProjetoUseCase,
     ArquivarProjetoUseCase, DeletarProjetoUseCase, ListarMembrosProjetoUseCase,
-    SolicitarAcessoProjetoUseCase, GerenciarSolicitacaoProjetoUseCase, ListarProjetosPorEmpresaUseCase
+    SolicitarAcessoProjetoUseCase, GerenciarSolicitacaoProjetoUseCase, ListarProjetosPorEmpresaUseCase, SairProjetoUseCase,
+    OcultarProjetosPorEmpresaUseCase
 )
 
 router = APIRouter(prefix="/projetos", tags=["Projetos"])
@@ -36,14 +37,13 @@ class ProjetoInput(BaseModel):
     nome: str
     descricao: str = ""
     empresa_id: int
-    categoria: str = ""
-    link_repo: str = ""
 
 class ProjetoEditInput(BaseModel):
     nome: str
     descricao: str = ""
-    categoria: str = ""
-    link_repo: str = ""
+
+class SolicitarAcessoInput(BaseModel):
+    mensagem: str | None = None
 
 class SolicitacaoAcaoInput(BaseModel):
     acao: str  # "aprovada" ou "recusada"
@@ -111,7 +111,7 @@ def criar_projeto(dados: ProjetoInput, usuario_id: int = Depends(get_usuario_id)
     repo = ProjetoRepositoryImpl(db)
     membro_repo = MembroProjetoRepositoryImpl(db)
     projeto = CriarProjetoUseCase(repo, membro_repo).executar(
-        dados.nome, dados.descricao, dados.empresa_id, dados.categoria, dados.link_repo, usuario_id
+        dados.nome, dados.descricao, dados.empresa_id, usuario_id
     )
     return {"id": projeto.id, "nome": projeto.nome, "cor": getattr(projeto, "cor", "teal")}
 
@@ -125,7 +125,6 @@ def detalhe_projeto(projeto_id: int, usuario_id: int = Depends(get_usuario_id), 
     return {
         "id": projeto.id, "nome": projeto.nome, "descricao": projeto.descricao,
         "empresa_id": projeto.empresa_id, "status": projeto.status,
-        "categoria": projeto.categoria, "link_repo": projeto.link_repo,
         "cor": getattr(projeto, "cor", "teal")
     }
 
@@ -136,7 +135,7 @@ def editar_projeto(projeto_id: int, dados: ProjetoEditInput, usuario_id: int = D
     membro_repo = MembroProjetoRepositoryImpl(db)
     try:
         projeto = EditarProjetoUseCase(repo, membro_repo).executar(
-            projeto_id, dados.nome, dados.descricao, dados.categoria, dados.link_repo, usuario_id
+            projeto_id, dados.nome, dados.descricao, usuario_id
         )
         return {"id": projeto.id, "nome": projeto.nome, "cor": getattr(projeto, "cor", "teal")}
     except (ValueError, PermissionError) as e:
@@ -170,6 +169,28 @@ def listar_membros(projeto_id: int, usuario_id: int = Depends(get_usuario_id), d
     membros = ListarMembrosProjetoUseCase(membro_repo).executar(projeto_id)
     return [{"id": m.id, "usuario_id": m.usuario_id, "role": m.role} for m in membros]
 
+
+@router.delete("/{projeto_id:int}/sair", status_code=204)
+def sair_do_projeto(projeto_id: int, usuario_id: int = Depends(get_usuario_id), db: Session = Depends(get_db)):
+    projeto_repo = ProjetoRepositoryImpl(db)
+    membro_repo = MembroProjetoRepositoryImpl(db)
+    try:
+        SairProjetoUseCase(membro_repo, projeto_repo).executar(projeto_id, usuario_id)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.delete("/empresa/{empresa_id:int}/ocultar", status_code=204)
+def ocultar_projetos_da_empresa(empresa_id: int, usuario_id: int = Depends(get_usuario_id), db: Session = Depends(get_db)):
+    projeto_repo = ProjetoRepositoryImpl(db)
+    membro_repo = MembroProjetoRepositoryImpl(db)
+    try:
+        OcultarProjetosPorEmpresaUseCase(projeto_repo, membro_repo).executar(empresa_id, usuario_id)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
 @router.get("/{projeto_id}/papeis", response_model=list[PapelProjetoOut])
 def listar_papeis_projeto(projeto_id: int, usuario_id: int = Depends(get_usuario_id), db: Session = Depends(get_db)):
     """
@@ -187,31 +208,35 @@ def listar_papeis_projeto(projeto_id: int, usuario_id: int = Depends(get_usuario
     if not membro_repo.buscar(projeto_id, usuario_id):
         raise HTTPException(status_code=403, detail="Sem acesso ao projeto")
 
-    roles = { (m.role or "").strip().lower() for m in membro_repo.listar_por_projeto(projeto_id) }
+    roles = {(m.role or "").strip().lower() for m in membro_repo.listar_por_projeto(projeto_id)}
     roles.discard("")
 
     defaults: dict[str, PapelProjetoOut] = {
-        "owner": PapelProjetoOut(nome="Owner", descricao="Controle total do projeto", permissoes="ler,escrever,administrar,deletar"),
-        "admin": PapelProjetoOut(nome="Admin", descricao="Administra o projeto e membros", permissoes="ler,escrever,administrar"),
-        "editor": PapelProjetoOut(nome="Editor", descricao="Pode criar e editar conteúdo", permissoes="ler,escrever"),
-        "member": PapelProjetoOut(nome="Member", descricao="Acesso padrão ao projeto", permissoes="ler"),
-        "viewer": PapelProjetoOut(nome="Viewer", descricao="Apenas visualização", permissoes="ler"),
+        "owner": PapelProjetoOut(
+            nome="Owner",
+            descricao="Controle total do projeto",
+            permissoes="gerenciar_membros,editar_configuracoes,excluir_projeto",
+        ),
+        "admin": PapelProjetoOut(
+            nome="Admin",
+            descricao="Pode gerenciar projetos e membros",
+            permissoes="gerenciar_membros,editar_configuracoes",
+        ),
+        "member": PapelProjetoOut(
+            nome="Member",
+            descricao="Acesso básico à empresa",
+            permissoes="ver_projeto",
+        ),
     }
 
-    # se não houver membros/roles cadastrados, retorna um conjunto mínimo
-    if not roles:
-        return [defaults["owner"], defaults["editor"], defaults["viewer"]]
+    # Sempre retorna o conjunto básico (mesmo que hoje só exista Owner no banco),
+    # e adiciona quaisquer roles extras encontrados.
+    result: list[PapelProjetoOut] = [defaults["owner"], defaults["admin"], defaults["member"]]
 
-    ordered = ["owner", "admin", "editor", "member", "viewer"]
-    result: list[PapelProjetoOut] = []
-    for key in ordered:
-        if key in roles:
-            result.append(defaults.get(key, PapelProjetoOut(nome=key.title(), descricao="", permissoes="")))
-
-    # inclui roles customizados que possam existir no banco
-    for key in sorted(roles):
-        if key not in ordered:
-            result.append(PapelProjetoOut(nome=key.title(), descricao="", permissoes=""))
+    known = set(defaults.keys())
+    extras = [r for r in sorted(roles) if r and r not in known]
+    for r in extras:
+        result.append(PapelProjetoOut(nome=r.title(), descricao="", permissoes=""))
 
     return result
 
@@ -220,15 +245,16 @@ def listar_papeis_projeto(projeto_id: int, usuario_id: int = Depends(get_usuario
 def listar_solicitacoes(projeto_id: int, usuario_id: int = Depends(get_usuario_id), db: Session = Depends(get_db)):
     sol_repo = SolicitacaoProjetoRepositoryImpl(db)
     solicitacoes = sol_repo.listar_por_projeto(projeto_id)
-    return [{"id": s.id, "usuario_id": s.usuario_id, "status": s.status} for s in solicitacoes]
+    return [{"id": s.id, "usuario_id": s.usuario_id, "status": s.status, "mensagem": getattr(s, "mensagem", None)} for s in solicitacoes]
 
 
 @router.post("/{projeto_id}/solicitacoes", status_code=201)
-def solicitar_acesso(projeto_id: int, usuario_id: int = Depends(get_usuario_id), db: Session = Depends(get_db)):
+def solicitar_acesso(projeto_id: int, dados: SolicitarAcessoInput | None = None, usuario_id: int = Depends(get_usuario_id), db: Session = Depends(get_db)):
     sol_repo = SolicitacaoProjetoRepositoryImpl(db)
     membro_repo = MembroProjetoRepositoryImpl(db)
     try:
-        sol = SolicitarAcessoProjetoUseCase(sol_repo, membro_repo).executar(projeto_id, usuario_id)
+        mensagem = dados.mensagem if dados else None
+        sol = SolicitarAcessoProjetoUseCase(sol_repo, membro_repo).executar(projeto_id, usuario_id, mensagem=mensagem)
         return {"id": sol.id, "status": sol.status}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
