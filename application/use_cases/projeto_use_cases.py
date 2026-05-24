@@ -1,4 +1,4 @@
-﻿import random
+import random
 from typing import List
 from domain.entities.projeto import Projeto, MembroProjeto, SolicitacaoProjeto
 from domain.ports.projeto_repository import (
@@ -7,7 +7,7 @@ from domain.ports.projeto_repository import (
 
 
 class ListarProjetosUseCase:
-    """Retorna todos os projetos em que o usuﾃ｡rio ﾃｩ membro."""
+    """Retorna todos os projetos em que o usuário é membro."""
 
     def __init__(self, repo: IProjetoRepository):
         self.repo = repo
@@ -56,7 +56,7 @@ class EditarProjetoUseCase:
     def executar(self, projeto_id: int, nome: str, descricao: str, usuario_id: int) -> Projeto:
         projeto = self.repo.buscar_por_id(projeto_id)
         if not projeto:
-            raise ValueError("Projeto nﾃ｣o encontrado")
+            raise ValueError("Projeto não encontrado")
             
         membro = self.membro_repo.buscar(projeto_id, usuario_id)
         if not membro or membro.role not in ("owner", "admin"):
@@ -77,7 +77,7 @@ class ArquivarProjetoUseCase:
     def executar(self, projeto_id: int, usuario_id: int) -> Projeto:
         projeto = self.repo.buscar_por_id(projeto_id)
         if not projeto:
-            raise ValueError("Projeto nﾃ｣o encontrado")
+            raise ValueError("Projeto não encontrado")
             
         membro = self.membro_repo.buscar(projeto_id, usuario_id)
         if not membro or membro.role not in ("owner", "admin"):
@@ -109,8 +109,8 @@ class DesarquivarProjetoUseCase:
 class DeletarProjetoUseCase:
     """Exclui (oculta) um projeto (apenas owner).
 
-    Exclusﾃ｣o lﾃｳgica: muda o status para "excluido". A restauraﾃｧﾃ｣o ﾃｩ feita apenas
-    via administraﾃｧﾃ｣o (ex.: alteraﾃｧﾃ｣o manual no banco).
+    Exclusão lógica: muda o status para "excluido". A restauração é feita apenas
+    via administração (ex.: alteração manual no banco).
     """
 
     def __init__(self, repo: IProjetoRepository, membro_repo: IMembroProjetoRepository):
@@ -120,7 +120,7 @@ class DeletarProjetoUseCase:
     def executar(self, projeto_id: int, usuario_id: int) -> None:
         projeto = self.repo.buscar_por_id(projeto_id)
         if not projeto:
-            raise ValueError("Projeto nﾃ｣o encontrado")
+            raise ValueError("Projeto não encontrado")
             
         membro = self.membro_repo.buscar(projeto_id, usuario_id)
         if not membro or membro.role != "owner":
@@ -141,7 +141,7 @@ class ListarMembrosProjetoUseCase:
 
 
 class SolicitarAcessoProjetoUseCase:
-    """Usuﾃ｡rio solicita entrada em um projeto."""
+    """Usuário solicita entrada em um projeto."""
 
     def __init__(self, solicitacao_repo: ISolicitacaoProjetoRepository, membro_repo: IMembroProjetoRepository):
         self.solicitacao_repo = solicitacao_repo
@@ -150,18 +150,18 @@ class SolicitarAcessoProjetoUseCase:
     def executar(self, projeto_id: int, usuario_id: int, mensagem: str | None = None) -> SolicitacaoProjeto:
         ja_membro = self.membro_repo.buscar(projeto_id, usuario_id)
         if ja_membro:
-            raise ValueError("Você já é membro deste projeto")
+            raise ValueError("Voce ja e membro deste projeto")
 
         existente = self.solicitacao_repo.buscar_pendente(projeto_id, usuario_id)
         if existente:
-            raise ValueError("Você já possui uma solicitação pendente para este projeto")
+            raise ValueError("Voce ja possui uma solicitacao pendente para este projeto")
 
         solicitacao = SolicitacaoProjeto(id=None, projeto_id=projeto_id, usuario_id=usuario_id, mensagem=mensagem)
         return self.solicitacao_repo.salvar(solicitacao)
 
 
 class GerenciarSolicitacaoProjetoUseCase:
-    """Owner/Admin aprova ou recusa uma solicitaﾃｧﾃ｣o de acesso."""
+    """Owner/Admin aprova ou recusa uma solicitação de acesso."""
 
     def __init__(
         self,
@@ -173,15 +173,15 @@ class GerenciarSolicitacaoProjetoUseCase:
 
     def executar(self, solicitacao_id: int, acao: str, usuario_id_solicitante: int) -> SolicitacaoProjeto:
         if acao not in ("aprovada", "recusada"):
-            raise ValueError("Aﾃｧﾃ｣o invﾃ｡lida. Use 'aprovada' ou 'recusada'")
+            raise ValueError("Ação inválida. Use 'aprovada' ou 'recusada'")
 
         solicitacao = self.solicitacao_repo.buscar_por_id(solicitacao_id)
         if not solicitacao:
-            raise ValueError("Solicitaﾃｧﾃ｣o nﾃ｣o encontrada")
+            raise ValueError("Solicitação não encontrada")
 
         membro = self.membro_repo.buscar(solicitacao.projeto_id, usuario_id_solicitante)
         if not membro or membro.role not in ("owner", "admin"):
-            raise PermissionError("Sem permissﾃ｣o para gerenciar solicitaﾃｧﾃｵes")
+            raise PermissionError("Sem permissão para gerenciar solicitações")
 
         solicitacao = self.solicitacao_repo.atualizar_status(solicitacao_id, acao)
 
@@ -198,9 +198,9 @@ class GerenciarSolicitacaoProjetoUseCase:
 
 
 class SairProjetoUseCase:
-    """Usuário remove a si mesmo do projeto.
+    """Usuario remove a si mesmo do projeto.
 
-    Regra: se for owner, só pode sair se existir pelo menos outro owner.
+    Regra: se for owner, so pode sair se existir pelo menos outro owner.
     """
 
     def __init__(self, membro_repo: IMembroProjetoRepository, projeto_repo: IProjetoRepository):
@@ -210,7 +210,7 @@ class SairProjetoUseCase:
     def executar(self, projeto_id: int, usuario_id: int) -> None:
         projeto = self.projeto_repo.buscar_por_id(projeto_id)
         if not projeto:
-            raise ValueError("Projeto nﾃ｣o encontrado")
+            raise ValueError("Projeto não encontrado")
 
         membro = self.membro_repo.buscar(projeto_id, usuario_id)
         if not membro:
@@ -232,7 +232,7 @@ class SairProjetoUseCase:
 class OcultarProjetosPorEmpresaUseCase:
     """Oculta (status=excluido) todos os projetos de uma empresa.
 
-    Permissão: exige que o usuário seja owner/admin em pelo menos um projeto da empresa.
+    Permissao: exige que o usuario seja owner/admin em pelo menos um projeto da empresa.
     """
 
     def __init__(self, projeto_repo: IProjetoRepository, membro_repo: IMembroProjetoRepository):
@@ -252,7 +252,7 @@ class OcultarProjetosPorEmpresaUseCase:
                 break
 
         if not permitido:
-            raise PermissionError("Sem permissão para ocultar projetos desta empresa")
+            raise PermissionError("Sem permissao para ocultar projetos desta empresa")
 
         return self.projeto_repo.ocultar_por_empresa(empresa_id)
 
