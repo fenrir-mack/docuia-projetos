@@ -86,6 +86,25 @@ class ArquivarProjetoUseCase:
         projeto.status = "arquivado"
         return self.repo.atualizar(projeto)
 
+class DesarquivarProjetoUseCase:
+    """Muda o status do projeto para ativo (apenas owner/admin)."""
+
+    def __init__(self, repo: IProjetoRepository, membro_repo: IMembroProjetoRepository):
+        self.repo = repo
+        self.membro_repo = membro_repo
+
+    def executar(self, projeto_id: int, usuario_id: int) -> Projeto:
+        projeto = self.repo.buscar_por_id(projeto_id)
+        if not projeto:
+            raise ValueError("Projeto nﾃ｣o encontrado")
+
+        membro = self.membro_repo.buscar(projeto_id, usuario_id)
+        if not membro or membro.role not in ("owner", "admin"):
+            raise PermissionError("Apenas donos ou admins podem desarquivar o projeto")
+
+        projeto.status = "ativo"
+        return self.repo.atualizar(projeto)
+
 
 class DeletarProjetoUseCase:
     """Exclui (oculta) um projeto (apenas owner).

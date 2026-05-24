@@ -13,7 +13,7 @@ from infrastructure.database.projeto_repository_impl import (
 )
 from application.use_cases.projeto_use_cases import (
     ListarProjetosUseCase, CriarProjetoUseCase, EditarProjetoUseCase,
-    ArquivarProjetoUseCase, DeletarProjetoUseCase, ListarMembrosProjetoUseCase,
+    ArquivarProjetoUseCase, DesarquivarProjetoUseCase, DeletarProjetoUseCase, ListarMembrosProjetoUseCase,
     SolicitarAcessoProjetoUseCase, GerenciarSolicitacaoProjetoUseCase, ListarProjetosPorEmpresaUseCase, SairProjetoUseCase,
     OcultarProjetosPorEmpresaUseCase
 )
@@ -148,6 +148,16 @@ def arquivar_projeto(projeto_id: int, usuario_id: int = Depends(get_usuario_id),
     membro_repo = MembroProjetoRepositoryImpl(db)
     try:
         projeto = ArquivarProjetoUseCase(repo, membro_repo).executar(projeto_id, usuario_id)
+        return {"id": projeto.id, "status": projeto.status, "cor": getattr(projeto, "cor", "teal")}
+    except (ValueError, PermissionError) as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+@router.put("/{projeto_id:int}/desarquivar")
+def desarquivar_projeto(projeto_id: int, usuario_id: int = Depends(get_usuario_id), db: Session = Depends(get_db)):
+    repo = ProjetoRepositoryImpl(db)
+    membro_repo = MembroProjetoRepositoryImpl(db)
+    try:
+        projeto = DesarquivarProjetoUseCase(repo, membro_repo).executar(projeto_id, usuario_id)
         return {"id": projeto.id, "status": projeto.status, "cor": getattr(projeto, "cor", "teal")}
     except (ValueError, PermissionError) as e:
         raise HTTPException(status_code=403, detail=str(e))
